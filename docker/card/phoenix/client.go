@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -12,8 +13,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const phoenixBaseURL = "http://phoenix:9740"
+const defaultPhoenixBaseURL = "http://phoenix:9740"
 const defaultTimeout = 5 * time.Second
+
+var phoenixBaseURL string
+
+func init() {
+	if url := os.Getenv("PHOENIX_URL"); url != "" {
+		phoenixBaseURL = url
+	} else {
+		phoenixBaseURL = defaultPhoenixBaseURL
+	}
+}
 
 var (
 	cachedPassword string
@@ -22,9 +33,15 @@ var (
 )
 
 // InitPassword loads the phoenix password at startup and caches it.
-// Call this once during application initialization.
+// If PHOENIX_PASSWORD env var is set, it is used directly.
+// Otherwise, falls back to reading from the phoenix config file.
 func InitPassword() error {
 	passwordOnce.Do(func() {
+		if pw := os.Getenv("PHOENIX_PASSWORD"); pw != "" {
+			log.Info("using phoenix password from PHOENIX_PASSWORD env var")
+			cachedPassword = pw
+			return
+		}
 		cachedPassword, passwordErr = readPasswordFromFile()
 	})
 	return passwordErr

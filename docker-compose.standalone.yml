@@ -1,0 +1,33 @@
+# Standalone deployment: only the Card service.
+# Use this when you already run phoenixd and Caddy on your VPS.
+#
+# Usage:
+#   cp .env.standalone .env
+#   # edit .env with your values
+#   docker compose -f docker-compose.standalone.yml up -d
+
+services:
+  card:
+    image: boltcard/card:latest
+    container_name: card
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - GOMEMLIMIT=150MiB
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "--head", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - card_data:/card_data
+
+volumes:
+  card_data:
