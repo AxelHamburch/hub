@@ -27,7 +27,7 @@ services:
       retries: 3
       start_period: 10s
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8008:8000"
     volumes:
       - card_data:/card_data
 

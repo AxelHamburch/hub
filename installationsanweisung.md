@@ -49,7 +49,7 @@ Prüfe, ob er läuft:
 
 ```bash
 sudo docker logs card
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8008/
 # Sollte 200 zurückgeben
 ```
 
@@ -66,7 +66,7 @@ services:
     # ports: entfernen — im Host-Modus nicht nötig
 ```
 
-Der Container lauscht dann direkt auf Port 8000 und kann Phoenixd auf 127.0.0.1:9740 erreichen.
+Der Container lauscht dann direkt auf Port 8008 und kann Phoenixd auf 127.0.0.1:9740 erreichen.
 
 **Alternative** (ohne Host-Modus):
 
@@ -108,7 +108,7 @@ boltcard.deinedomain.com {
                 window 1m
             }
         }
-        reverse_proxy 127.0.0.1:8000
+        reverse_proxy 127.0.0.1:8008
     }
 
     # Rate Limiting für API-Endpunkte (empfohlen)
@@ -123,17 +123,17 @@ boltcard.deinedomain.com {
                 window 1m
             }
         }
-        reverse_proxy 127.0.0.1:8000
+        reverse_proxy 127.0.0.1:8008
     }
 
     handle {
         encode zstd
-        reverse_proxy 127.0.0.1:8000
+        reverse_proxy 127.0.0.1:8008
     }
 }
 ```
 
-> **Hinweis:** Die `rate_limit`-Direktive erfordert das Caddy-Plugin `caddy-ratelimit`. Falls dein Caddy das nicht hat, entferne die `rate_limit`-Blöcke und verwende einfach `reverse_proxy 127.0.0.1:8000` direkt.
+> **Hinweis:** Die `rate_limit`-Direktive erfordert das Caddy-Plugin `caddy-ratelimit`. Falls dein Caddy das nicht hat, entferne die `rate_limit`-Blöcke und verwende einfach `reverse_proxy 127.0.0.1:8008` direkt.
 
 Dann Caddy neu laden:
 
