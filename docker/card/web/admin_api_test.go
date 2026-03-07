@@ -686,3 +686,47 @@ func TestAdminApiCardRouter_InvalidId(t *testing.T) {
 		t.Fatalf("expected 400, got %d", w.Code)
 	}
 }
+
+func TestAdminApiGetCard_PayLinkEnabled(t *testing.T) {
+	app := openTestApp(t)
+	token := setupAdminSession(t, app)
+	insertFundedCard(t, app.db_conn, 1000)
+
+	handler := app.CreateHandler_AdminApi()
+	r := httptest.NewRequest("GET", "/admin/api/cards/1", nil)
+	r.AddCookie(&http.Cookie{Name: "admin_session_token", Value: token})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	if resp["payLinkEnabled"] != "N" {
+		t.Fatalf("expected default payLinkEnabled 'N', got %v", resp["payLinkEnabled"])
+	}
+}
+
+func TestAdminApiUpdateLimits_PayLinkEnabled(t *testing.T) {
+	app := openTestApp(t)
+	token := setupAdminSession(t, app)
+	cardId := insertFundedCard(t, app.db_conn, 1000)
+
+	handler := app.CreateHandler_AdminApi()
+	body := `{"txLimitSats":1000,"dayLimitSats":5000,"lnurlwEnable":"Y","payLinkEnabled":"Y"}`
+	r := httptest.NewRequest("PUT", "/admin/api/cards/"+strconv.Itoa(cardId)+"/limits",
+		strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	r.AddCookie(&http.Cookie{Name: "admin_session_token", Value: token})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Verify it was stored
+	card, _ := db.Db_get_card(app.db_conn, cardId)
+	if card.Pay_link_enabled != "Y" {
+		t.Fatalf("expected pay_link_enabled 'Y', got %q", card.Pay_link_enabled)
+	}
+}

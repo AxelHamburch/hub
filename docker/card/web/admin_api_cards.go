@@ -106,6 +106,7 @@ func (app *App) adminApiGetCard(w http.ResponseWriter, _ *http.Request, cardId i
 		"wiped":            card.Wiped,
 		"lnAddress":        card.Ln_address,
 		"lnAddressEnabled": card.Ln_address_enabled,
+		"payLinkEnabled":   card.Pay_link_enabled,
 		"hostDomain":       hostDomain,
 	})
 }
@@ -130,6 +131,7 @@ func (app *App) adminApiUpdateCardLimits(w http.ResponseWriter, r *http.Request,
 		DayLimitSats     int    `json:"dayLimitSats"`
 		LnurlwEnable     string `json:"lnurlwEnable"`
 		LnAddressEnabled string `json:"lnAddressEnabled"`
+		PayLinkEnabled   string `json:"payLinkEnabled"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -157,6 +159,17 @@ func (app *App) adminApiUpdateCardLimits(w http.ResponseWriter, r *http.Request,
 
 	if req.LnAddressEnabled != "" {
 		db.Db_update_card_ln_address_enabled(app.db_conn, cardId, req.LnAddressEnabled)
+	}
+
+	// Validate payLinkEnabled (optional)
+	if req.PayLinkEnabled != "" && req.PayLinkEnabled != "Y" && req.PayLinkEnabled != "N" {
+		w.WriteHeader(http.StatusBadRequest)
+		writeJSON(w, map[string]string{"error": "payLinkEnabled must be Y or N"})
+		return
+	}
+
+	if req.PayLinkEnabled != "" {
+		db.Db_update_card_pay_link_enabled(app.db_conn, cardId, req.PayLinkEnabled)
 	}
 
 	writeJSON(w, map[string]bool{"ok": true})
