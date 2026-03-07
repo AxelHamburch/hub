@@ -86,6 +86,14 @@ func Db_update_card_ln_address_enabled(db_conn *sql.DB, card_id int, ln_address_
 	}
 }
 
+func Db_update_card_pay_link_enabled(db_conn *sql.DB, card_id int, pay_link_enabled string) {
+	sqlStatement := `UPDATE cards SET pay_link_enabled = $1 WHERE card_id = $2 AND wiped = 'N';`
+	_, err := db_conn.Exec(sqlStatement, pay_link_enabled, card_id)
+	if err != nil {
+		log.Error("db_update_card_pay_link_enabled error: ", err)
+	}
+}
+
 func Db_update_receipt_paid(db_conn *sql.DB, card_receipt_id int) {
 
 	// update record

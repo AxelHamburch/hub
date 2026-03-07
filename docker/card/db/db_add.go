@@ -38,6 +38,15 @@ func Db_add_card_receipt(db_conn *sql.DB, card_id int, payment_request string, p
 	return card_receipt_id
 }
 
+func Db_add_pay_link_address(db_conn *sql.DB, address string, cardId int, expiryDays int) {
+	sqlStatement := `INSERT INTO pay_link_addresses (address, card_id, created_at, expires_at)
+		VALUES ($1, $2, unixepoch(), unixepoch() + $3 * 86400);`
+	_, err := db_conn.Exec(sqlStatement, address, cardId, expiryDays)
+	if err != nil {
+		log.Error("db_add_pay_link_address error: ", err)
+	}
+}
+
 func Db_add_card_payment(db_conn *sql.DB, card_id int, amount_sat int, invoice string) (card_payment_id int) {
 
 	// insert a new record

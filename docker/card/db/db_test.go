@@ -999,6 +999,94 @@ func TestDbSetReceiptPaid_OnlyUpdatesUnpaid(t *testing.T) {
 	}
 }
 
+func TestPayLinkEnabled(t *testing.T) {
+	db_conn := openTestDB(t)
+	Db_init(db_conn)
+	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
+	card, _ := Db_get_card(db_conn, 1)
+
+	// Default should be 'N'
+	if card.Pay_link_enabled != "N" {
+		t.Fatalf("expected default pay_link_enabled 'N', got %q", card.Pay_link_enabled)
+	}
+
+	// Update to 'Y'
+	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
+	card, _ = Db_get_card(db_conn, 1)
+	if card.Pay_link_enabled != "Y" {
+		t.Fatalf("expected pay_link_enabled 'Y', got %q", card.Pay_link_enabled)
+	}
+}
+
+func TestPayLinkAddress_InsertAndLookup(t *testing.T) {
+	db_conn := openTestDB(t)
+	Db_init(db_conn)
+	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
+	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
+
+	// Insert a pay link address (expires in 30 days)
+	Db_add_pay_link_address(db_conn, "plaabbccdd", 1, 30)
+
+	// Look it up
+	cardId := Db_get_card_by_pay_link_address(db_conn, "plaabbccdd")
+	if cardId != 1 {
+		t.Fatalf("expected card_id 1, got %d", cardId)
+	}
+
+	// Unknown address returns 0
+	cardId = Db_get_card_by_pay_link_address(db_conn, "pl00000000")
+	if cardId != 0 {
+		t.Fatalf("expected 0 for unknown address, got %d", cardId)
+	}
+}
+
+func TestPayLinkAddress_ExpiredExcluded(t *testing.T) {
+	db_conn := openTestDB(t)
+	Db_init(db_conn)
+	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
+	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
+
+	// Insert expired address directly
+	db_conn.Exec(`INSERT INTO pay_link_addresses (address, card_id, created_at, expires_at) VALUES ('plexpired1', 1, 1000, 1001)`)
+
+	cardId := Db_get_card_by_pay_link_address(db_conn, "plexpired1")
+	if cardId != 0 {
+		t.Fatalf("expected 0 for expired address, got %d", cardId)
+	}
+}
+
+func TestPayLinkAddress_DisabledCardExcluded(t *testing.T) {
+	db_conn := openTestDB(t)
+	Db_init(db_conn)
+	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
+	// pay_link_enabled defaults to 'N'
+
+	Db_add_pay_link_address(db_conn, "pldisabled", 1, 30)
+
+	cardId := Db_get_card_by_pay_link_address(db_conn, "pldisabled")
+	if cardId != 0 {
+		t.Fatalf("expected 0 for disabled pay_link card, got %d", cardId)
+	}
+}
+
+func TestPayLinkAddress_MultipleAddressesPerCard(t *testing.T) {
+	db_conn := openTestDB(t)
+	Db_init(db_conn)
+	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
+	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
+
+	Db_add_pay_link_address(db_conn, "pladdress1", 1, 30)
+	Db_add_pay_link_address(db_conn, "pladdress2", 1, 30)
+
+	// Both should resolve to the same card
+	if Db_get_card_by_pay_link_address(db_conn, "pladdress1") != 1 {
+		t.Fatal("first address should still resolve")
+	}
+	if Db_get_card_by_pay_link_address(db_conn, "pladdress2") != 1 {
+		t.Fatal("second address should also resolve")
+	}
+}
+
 func TestDbInsertCard_UniqueLnAddresses(t *testing.T) {
 	db := openTestDB(t)
 	Db_init(db)

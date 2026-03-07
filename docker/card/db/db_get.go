@@ -325,6 +325,33 @@ func Db_get_card_by_ln_address(db_conn *sql.DB, ln_address string) (card_id int)
 	return value
 }
 
+func Db_get_card_by_pay_link_address(db_conn *sql.DB, address string) (card_id int) {
+	sqlStatement := `SELECT pla.card_id FROM pay_link_addresses pla
+		JOIN cards c ON c.card_id = pla.card_id
+		WHERE pla.address = $1
+		AND pla.expires_at > unixepoch()
+		AND c.pay_link_enabled = 'Y'
+		AND c.wiped = 'N';`
+	row := db_conn.QueryRow(sqlStatement, address)
+	value := 0
+	err := row.Scan(&value)
+	if err != nil {
+		return 0
+	}
+	return value
+}
+
+func Db_get_card_pay_link_enabled(db_conn *sql.DB, card_id int) string {
+	sqlStatement := `SELECT pay_link_enabled FROM cards WHERE card_id=$1 AND wiped='N';`
+	row := db_conn.QueryRow(sqlStatement, card_id)
+	value := ""
+	err := row.Scan(&value)
+	if err != nil {
+		return ""
+	}
+	return value
+}
+
 func Db_get_card_lnurlw_enable(db_conn *sql.DB, card_id int) string {
 
 	sqlStatement := `SELECT lnurlw_enable FROM cards WHERE card_id=$1 AND wiped='N';`
