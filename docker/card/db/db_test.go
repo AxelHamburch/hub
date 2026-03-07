@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -22,8 +23,8 @@ func TestDbInit_SchemaMigratesToLatest(t *testing.T) {
 	Db_init(db)
 
 	version := Db_get_setting(db, "schema_version_number")
-	if version != "8" {
-		t.Fatalf("expected schema version 8, got %q", version)
+	if version != "9" {
+		t.Fatalf("expected schema version 9, got %q", version)
 	}
 }
 
@@ -896,8 +897,11 @@ func TestDbInsertCard_GeneratesLnAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(card.Ln_address) != 8 {
-		t.Fatalf("expected 8-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
+	if len(card.Ln_address) != 9 {
+		t.Fatalf("expected 9-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
+	}
+	if !strings.HasPrefix(card.Ln_address, "c") {
+		t.Fatalf("expected ln_address to start with 'c', got %q", card.Ln_address)
 	}
 	if card.Ln_address_enabled != "Y" {
 		t.Fatalf("expected ln_address_enabled 'Y', got %q", card.Ln_address_enabled)
@@ -913,8 +917,11 @@ func TestDbInsertCardWithUid_GeneratesLnAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(card.Ln_address) != 8 {
-		t.Fatalf("expected 8-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
+	if len(card.Ln_address) != 9 {
+		t.Fatalf("expected 9-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
+	}
+	if !strings.HasPrefix(card.Ln_address, "c") {
+		t.Fatalf("expected ln_address to start with 'c', got %q", card.Ln_address)
 	}
 }
 

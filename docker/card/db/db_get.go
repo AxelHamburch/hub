@@ -197,6 +197,7 @@ type Card struct {
 	Note                       string
 	Ln_address                 string
 	Ln_address_enabled         string
+	Pay_link_enabled           string
 }
 
 func Db_get_card(db_conn *sql.DB, card_id int) (card *Card, err error) {
@@ -209,7 +210,7 @@ func Db_get_card(db_conn *sql.DB, card_id int) (card *Card, err error) {
 		`lnurlw_request_timeout_sec, lnurlw_enable, ` +
 		`lnurlw_k1, lnurlw_k1_expiry, tx_limit_sats, ` +
 		`day_limit_sats, uid_privacy, pin_enable, pin_number, ` +
-		`pin_limit_sats, wiped, note, ln_address, ln_address_enabled FROM cards WHERE card_id=$1 AND wiped = 'N';`
+		`pin_limit_sats, wiped, note, ln_address, ln_address_enabled, pay_link_enabled FROM cards WHERE card_id=$1 AND wiped = 'N';`
 	row := db_conn.QueryRow(sqlStatement, card_id)
 	err = row.Scan(
 		&c.Card_id,
@@ -237,7 +238,8 @@ func Db_get_card(db_conn *sql.DB, card_id int) (card *Card, err error) {
 		&c.Wiped,
 		&c.Note,
 		&c.Ln_address,
-		&c.Ln_address_enabled)
+		&c.Ln_address_enabled,
+		&c.Pay_link_enabled)
 
 	return &c, err
 }
@@ -357,7 +359,7 @@ type TableCount struct {
 }
 
 func Db_get_table_counts(db_conn *sql.DB) ([]TableCount, error) {
-	tables := []string{"cards", "card_payments", "card_receipts", "settings", "program_cards"}
+	tables := []string{"cards", "card_payments", "card_receipts", "settings", "program_cards", "pay_link_addresses"}
 	counts := make([]TableCount, 0, len(tables))
 	for _, t := range tables {
 		var count int

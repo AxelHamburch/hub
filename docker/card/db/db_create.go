@@ -261,6 +261,54 @@ func update_schema_7(db *sql.DB) {
 	}
 }
 
+func update_schema_8(db *sql.DB) {
+
+	// 1. Add pay_link_enabled column to cards
+	sqlStmt := `
+		BEGIN TRANSACTION;
+		ALTER TABLE cards ADD COLUMN pay_link_enabled CHAR(1) NOT NULL DEFAULT 'N';
+		COMMIT TRANSACTION;
+	`
+	_, err := db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("update_schema_8 alter error: %q", err)
+		return
+	}
+
+	// 2. Migrate existing ln_address values from "{hex}" to "c{hex}"
+	_, err = db.Exec("UPDATE cards SET ln_address = 'c' || ln_address WHERE ln_address != '' AND ln_address NOT LIKE 'c%'")
+	if err != nil {
+		log.Printf("update_schema_8 ln_address migration error: %q", err)
+		return
+	}
+
+	// 3. Create pay_link_addresses table
+	sqlStmt = `
+		CREATE TABLE IF NOT EXISTS
+		pay_link_addresses (
+			pay_link_address_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			address CHAR(12) UNIQUE NOT NULL,
+			card_id INTEGER NOT NULL,
+			created_at INTEGER NOT NULL,
+			expires_at INTEGER NOT NULL,
+			CONSTRAINT fk_card FOREIGN KEY(card_id) REFERENCES cards(card_id)
+		);
+		CREATE INDEX IF NOT EXISTS idx_pay_link_addresses_card_id ON pay_link_addresses(card_id);
+		CREATE INDEX IF NOT EXISTS idx_pay_link_addresses_expires_at ON pay_link_addresses(expires_at);
+	`
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("update_schema_8 create table error: %q", err)
+		return
+	}
+
+	// 4. Update schema version
+	_, err = db.Exec("UPDATE settings SET value='9' WHERE name='schema_version_number'")
+	if err != nil {
+		log.Printf("update_schema_8 version update error: %q", err)
+	}
+}
+
 // randomHex8 generates an 8-character random hex string for lightning addresses.
 func randomHex8() string {
 	b := make([]byte, 4)
