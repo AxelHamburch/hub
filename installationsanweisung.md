@@ -11,8 +11,7 @@ Anleitung für die Installation auf einem VPS, auf dem bereits **Caddy** und **P
 ## Schritt 1: Repository clonen
 
 ```bash
-cd /opt
-git clone -b stand-alone-hub https://github.com/boltcard/hub.git boltcard-hub
+git clone -b stand-alone-hub https://github.com/AxelHamburch/hub.git boltcard-hub
 cd boltcard-hub
 ```
 
@@ -37,16 +36,19 @@ Das Phoenix-Passwort findest du so:
 grep http-password ~/.phoenix/phoenix.conf
 ```
 
-## Schritt 3: Card-Container starten
+## Schritt 3: Image lokal bauen und Container starten
+
+Da das offizielle Docker-Hub-Image die Standalone-Änderungen noch nicht enthält, muss das Image lokal gebaut werden:
 
 ```bash
-docker compose -f docker-compose.standalone.yml up -d
+sudo docker compose -f docker-compose.standalone.yml build
+sudo docker compose -f docker-compose.standalone.yml up -d
 ```
 
 Prüfe, ob er läuft:
 
 ```bash
-docker logs card
+sudo docker logs card
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/
 # Sollte 200 zurückgeben
 ```
@@ -148,9 +150,10 @@ sudo systemctl reload caddy
 ## Updates
 
 ```bash
-cd /opt/boltcard-hub
-docker compose -f docker-compose.standalone.yml pull
-docker compose -f docker-compose.standalone.yml up -d
+cd ~/boltcard-hub
+git pull
+sudo docker compose -f docker-compose.standalone.yml build
+sudo docker compose -f docker-compose.standalone.yml up -d
 ```
 
 ## Hinweise

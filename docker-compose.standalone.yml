@@ -4,11 +4,13 @@
 # Usage:
 #   cp .env.standalone .env
 #   # edit .env with your values
+#   docker compose -f docker-compose.standalone.yml build
 #   docker compose -f docker-compose.standalone.yml up -d
 
 services:
   card:
-    image: boltcard/card:latest
+    build: ./docker/card
+    image: boltcard/card:standalone
     container_name: card
     restart: unless-stopped
     env_file: .env
