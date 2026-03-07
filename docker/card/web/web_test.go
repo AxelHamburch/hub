@@ -1372,6 +1372,116 @@ func TestLnurlwRequest_WithdrawDisabled(t *testing.T) {
 
 // --- LnurlwCallback Pre-Validation Tests ---
 
+func TestLnurlwRequest_PayLinkIncludedWhenEnabled(t *testing.T) {
+	app := openTestApp(t)
+	key1Hex := hex.EncodeToString(nfcTestKey1)
+	key2Hex := hex.EncodeToString(nfcTestKey2)
+	db.Db_insert_card(app.db_conn, "k0", key1Hex, key2Hex, "k3", "k4", "lnlogin", "lnpass")
+	db.Db_set_tokens(app.db_conn, "lnlogin", "lnpass", "lnaccess", "lnrefresh")
+	cardId := db.Db_get_card_id_from_access_token(app.db_conn, "lnaccess")
+	db.Db_update_card_without_pin(app.db_conn, cardId, 1000000, 1000000, "N", 0, "Y")
+	db.Db_update_card_pay_link_enabled(app.db_conn, cardId, "Y")
+
+	p, c := buildNfcTap(t, nfcTestKey1, nfcTestKey2, nfcTestUID, 1)
+	pHex := hex.EncodeToString(p)
+	cHex := hex.EncodeToString(c)
+
+	handler := app.CreateHandler_LnurlwRequest()
+	r := httptest.NewRequest("GET", "/ln?p="+pHex+"&c="+cHex, nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	payLink, ok := resp["payLink"].(string)
+	if !ok || payLink == "" {
+		t.Fatal("expected payLink in response when pay_link_enabled=Y")
+	}
+	if !strings.HasPrefix(payLink, "https://test.example.com/.well-known/lnurlp/pl") {
+		t.Fatalf("payLink has wrong prefix: %s", payLink)
+	}
+
+	// Extract address from payLink URL and verify it resolves to the card
+	address := strings.TrimPrefix(payLink, "https://test.example.com/.well-known/lnurlp/")
+	if !strings.HasPrefix(address, "pl") {
+		t.Fatalf("expected address to start with 'pl', got %q", address)
+	}
+	resolvedCardId := db.Db_get_card_by_pay_link_address(app.db_conn, address)
+	if resolvedCardId != cardId {
+		t.Fatalf("payLink address does not resolve to card: expected %d, got %d", cardId, resolvedCardId)
+	}
+}
+
+func TestLnurlwRequest_PayLinkOmittedWhenDisabled(t *testing.T) {
+	app := openTestApp(t)
+	key1Hex := hex.EncodeToString(nfcTestKey1)
+	key2Hex := hex.EncodeToString(nfcTestKey2)
+	db.Db_insert_card(app.db_conn, "k0", key1Hex, key2Hex, "k3", "k4", "lnlogin", "lnpass")
+	db.Db_set_tokens(app.db_conn, "lnlogin", "lnpass", "lnaccess", "lnrefresh")
+	cardId := db.Db_get_card_id_from_access_token(app.db_conn, "lnaccess")
+	db.Db_update_card_without_pin(app.db_conn, cardId, 1000000, 1000000, "N", 0, "Y")
+	// pay_link_enabled defaults to 'N'
+
+	p, c := buildNfcTap(t, nfcTestKey1, nfcTestKey2, nfcTestUID, 1)
+	pHex := hex.EncodeToString(p)
+	cHex := hex.EncodeToString(c)
+
+	handler := app.CreateHandler_LnurlwRequest()
+	r := httptest.NewRequest("GET", "/ln?p="+pHex+"&c="+cHex, nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	if _, ok := resp["payLink"]; ok {
+		t.Fatal("expected no payLink in response when pay_link_enabled=N")
+	}
+}
+
+func TestLnurlwRequest_PayLinkNewAddressEachTap(t *testing.T) {
+	app := openTestApp(t)
+	key1Hex := hex.EncodeToString(nfcTestKey1)
+	key2Hex := hex.EncodeToString(nfcTestKey2)
+	db.Db_insert_card(app.db_conn, "k0", key1Hex, key2Hex, "k3", "k4", "lnlogin", "lnpass")
+	db.Db_set_tokens(app.db_conn, "lnlogin", "lnpass", "lnaccess", "lnrefresh")
+	cardId := db.Db_get_card_id_from_access_token(app.db_conn, "lnaccess")
+	db.Db_update_card_without_pin(app.db_conn, cardId, 1000000, 1000000, "N", 0, "Y")
+	db.Db_update_card_pay_link_enabled(app.db_conn, cardId, "Y")
+
+	handler := app.CreateHandler_LnurlwRequest()
+	var addresses []string
+
+	for i := uint32(1); i <= 3; i++ {
+		p, c := buildNfcTap(t, nfcTestKey1, nfcTestKey2, nfcTestUID, i)
+		pHex := hex.EncodeToString(p)
+		cHex := hex.EncodeToString(c)
+		r := httptest.NewRequest("GET", "/ln?p="+pHex+"&c="+cHex, nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+
+		var resp map[string]any
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		payLink := resp["payLink"].(string)
+		address := strings.TrimPrefix(payLink, "https://test.example.com/.well-known/lnurlp/")
+		addresses = append(addresses, address)
+	}
+
+	// All three addresses should be different
+	if addresses[0] == addresses[1] || addresses[1] == addresses[2] || addresses[0] == addresses[2] {
+		t.Fatalf("expected unique addresses per tap, got %v", addresses)
+	}
+
+	// All three should still resolve (previous addresses stay valid)
+	for _, addr := range addresses {
+		cardId := db.Db_get_card_by_pay_link_address(app.db_conn, addr)
+		if cardId != 1 {
+			t.Fatalf("address %s should still resolve to card 1, got %d", addr, cardId)
+		}
+	}
+}
+
 // BOLT11 test invoice from ln-decodepay test suite (1,500 sats = 1,500,000 msats)
 const testBolt11 = "lnbc15u1p3xnhl2pp5jptserfk3zk4qy42tlucycrfwxhydvlemu9pqr93tuzlv9cc7g3sdqsvfhkcap3xyhx7un8cqzpgxqzjcsp5f8c52y2stc300gl6s4xswtjpc37hrnnr3c9wvtgjfuvqmpm35evq9qyyssqy4lgd8tj637qcjp05rdpxxykjenthxftej7a2zzmwrmrl70fyj9hvj0rewhzj7jfyuwkwcg9g2jpwtk3wkjtwnkdks84hsnu8xps5vsq4gj5hs"
 

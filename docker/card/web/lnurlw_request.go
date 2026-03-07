@@ -19,6 +19,7 @@ type LnurlwResponse struct {
 	MinWithdrawable     int    `json:"minWithdrawable"`
 	MaxWithdrawable     int    `json:"maxWithdrawable"`
 	PinLimit            int    `json:"pinLimit,omitempty"`
+	PayLink             string `json:"payLink,omitempty"`
 }
 
 func (app *App) CreateHandler_LnurlwRequest() http.HandlerFunc {
@@ -76,11 +77,26 @@ func (app *App) CreateHandler_LnurlwRequest() http.HandlerFunc {
 		minWithdrawableSats := 1
 		maxWithdrawableSats := 100_000_000
 
+		hostDomain := db.Db_get_setting(app.db_conn, "host_domain")
+
 		resObj.Tag = "withdrawRequest"
-		resObj.Callback = "https://" + db.Db_get_setting(app.db_conn, "host_domain") + "/cb"
+		resObj.Callback = "https://" + hostDomain + "/cb"
 		resObj.Lnurlwk1 = lnurlwK1
 		resObj.MinWithdrawable = minWithdrawableSats * 1000
 		resObj.MaxWithdrawable = maxWithdrawableSats * 1000
+
+		// Include payLink if enabled (LUD-19)
+		if db.Db_get_card_pay_link_enabled(app.db_conn, cardId) == "Y" {
+			payLinkAddress := "pl" + util.Random_hex()[:8]
+			expiryDays := 30 // default
+			if v := db.Db_get_setting(app.db_conn, "pay_link_expiry_days"); v != "" {
+				if days, err := strconv.Atoi(v); err == nil && days > 0 {
+					expiryDays = days
+				}
+			}
+			db.Db_add_pay_link_address(app.db_conn, payLinkAddress, cardId, expiryDays)
+			resObj.PayLink = "https://" + hostDomain + "/.well-known/lnurlp/" + payLinkAddress
+		}
 
 		log.Info("sending response for lnurlw request")
 
