@@ -9,7 +9,7 @@ import (
 func Db_insert_card(db_conn *sql.DB, key0 string, key1 string, k2 string, key3 string, key4 string,
 	login string, password string) {
 
-	lnAddress := "c" + randomHex8()
+	lnAddress := "c." + randomHex8()
 
 	sqlStatement := `INSERT INTO cards (key0_auth, key1_enc,` +
 		` key2_cmac, key3, key4, login, password, ln_address)` +
@@ -32,7 +32,7 @@ func Db_insert_card(db_conn *sql.DB, key0 string, key1 string, k2 string, key3 s
 func Db_insert_card_with_uid(db_conn *sql.DB, key0 string, key1 string, k2 string, key3 string, key4 string,
 	login string, password string, uid string, group_tag string) {
 
-	lnAddress := "c" + randomHex8()
+	lnAddress := "c." + randomHex8()
 
 	sqlStatement := `INSERT INTO cards (key0_auth, key1_enc,` +
 		` key2_cmac, key3, key4, login, password, uid, group_tag, ln_address)` +

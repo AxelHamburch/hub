@@ -1398,14 +1398,14 @@ func TestLnurlwRequest_PayLinkIncludedWhenEnabled(t *testing.T) {
 	if !ok || payLink == "" {
 		t.Fatal("expected payLink in response when pay_link_enabled=Y")
 	}
-	if !strings.HasPrefix(payLink, "https://test.example.com/.well-known/lnurlp/pl") {
+	if !strings.HasPrefix(payLink, "https://test.example.com/.well-known/lnurlp/pl.") {
 		t.Fatalf("payLink has wrong prefix: %s", payLink)
 	}
 
 	// Extract address from payLink URL and verify it resolves to the card
 	address := strings.TrimPrefix(payLink, "https://test.example.com/.well-known/lnurlp/")
-	if !strings.HasPrefix(address, "pl") {
-		t.Fatalf("expected address to start with 'pl', got %q", address)
+	if !strings.HasPrefix(address, "pl.") {
+		t.Fatalf("expected address to start with 'pl.', got %q", address)
 	}
 	resolvedCardId := db.Db_get_card_by_pay_link_address(app.db_conn, address)
 	if resolvedCardId != cardId {
@@ -2271,11 +2271,11 @@ func TestLnurlpRequest_PayLinkAddress(t *testing.T) {
 
 	// Enable pay link and insert a one-time address
 	db.Db_update_card_pay_link_enabled(app.db_conn, 1, "Y")
-	db.Db_add_pay_link_address(app.db_conn, "plonetimex", 1, 30)
+	db.Db_add_pay_link_address(app.db_conn, "pl.onetimex", 1, 30)
 
 	handler := app.CreateHandler_LnurlpRequest()
 	r := httptest.NewRequest("GET", "/.well-known/lnurlp/plonetimex", nil)
-	r = mux.SetURLVars(r, map[string]string{"username": "plonetimex"})
+	r = mux.SetURLVars(r, map[string]string{"username": "pl.onetimex"})
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
@@ -2295,11 +2295,11 @@ func TestLnurlpCallback_PayLinkAddress(t *testing.T) {
 	insertFundedCard(t, app.db_conn, 1000)
 
 	db.Db_update_card_pay_link_enabled(app.db_conn, 1, "Y")
-	db.Db_add_pay_link_address(app.db_conn, "plcallback", 1, 30)
+	db.Db_add_pay_link_address(app.db_conn, "pl.callback", 1, 30)
 
 	handler := app.CreateHandler_LnurlpCallback()
 	r := httptest.NewRequest("GET", "/.well-known/lnurlp/plcallback/callback?amount=10000", nil)
-	r = mux.SetURLVars(r, map[string]string{"username": "plcallback"})
+	r = mux.SetURLVars(r, map[string]string{"username": "pl.callback"})
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 

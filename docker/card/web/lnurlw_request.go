@@ -87,7 +87,7 @@ func (app *App) CreateHandler_LnurlwRequest() http.HandlerFunc {
 
 		// Include payLink if enabled (LUD-19)
 		if db.Db_get_card_pay_link_enabled(app.db_conn, cardId) == "Y" {
-			payLinkAddress := "pl" + util.Random_hex()[:8]
+			payLinkAddress := "pl." + util.Random_hex()[:8]
 			expiryDays := 30 // default
 			if v := db.Db_get_setting(app.db_conn, "pay_link_expiry_days"); v != "" {
 				if days, err := strconv.Atoi(v); err == nil && days > 0 {

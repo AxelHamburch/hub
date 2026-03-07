@@ -275,8 +275,8 @@ func update_schema_8(db *sql.DB) {
 		return
 	}
 
-	// 2. Migrate existing ln_address values from "{hex}" to "c{hex}"
-	_, err = db.Exec("UPDATE cards SET ln_address = 'c' || ln_address WHERE ln_address != '' AND ln_address NOT LIKE 'c%'")
+	// 2. Migrate existing ln_address values from "{hex}" to "c.{hex}"
+	_, err = db.Exec("UPDATE cards SET ln_address = 'c.' || ln_address WHERE ln_address != '' AND ln_address NOT LIKE 'c.%'")
 	if err != nil {
 		log.Printf("update_schema_8 ln_address migration error: %q", err)
 		return

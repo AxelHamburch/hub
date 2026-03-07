@@ -897,11 +897,11 @@ func TestDbInsertCard_GeneratesLnAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(card.Ln_address) != 9 {
-		t.Fatalf("expected 9-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
+	if len(card.Ln_address) != 10 {
+		t.Fatalf("expected 10-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
 	}
-	if !strings.HasPrefix(card.Ln_address, "c") {
-		t.Fatalf("expected ln_address to start with 'c', got %q", card.Ln_address)
+	if !strings.HasPrefix(card.Ln_address, "c.") {
+		t.Fatalf("expected ln_address to start with 'c.', got %q", card.Ln_address)
 	}
 	if card.Ln_address_enabled != "Y" {
 		t.Fatalf("expected ln_address_enabled 'Y', got %q", card.Ln_address_enabled)
@@ -917,11 +917,11 @@ func TestDbInsertCardWithUid_GeneratesLnAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(card.Ln_address) != 9 {
-		t.Fatalf("expected 9-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
+	if len(card.Ln_address) != 10 {
+		t.Fatalf("expected 10-char ln_address, got %q (len %d)", card.Ln_address, len(card.Ln_address))
 	}
-	if !strings.HasPrefix(card.Ln_address, "c") {
-		t.Fatalf("expected ln_address to start with 'c', got %q", card.Ln_address)
+	if !strings.HasPrefix(card.Ln_address, "c.") {
+		t.Fatalf("expected ln_address to start with 'c.', got %q", card.Ln_address)
 	}
 }
 
@@ -1025,16 +1025,16 @@ func TestPayLinkAddress_InsertAndLookup(t *testing.T) {
 	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
 
 	// Insert a pay link address (expires in 30 days)
-	Db_add_pay_link_address(db_conn, "plaabbccdd", 1, 30)
+	Db_add_pay_link_address(db_conn, "pl.aabbccdd", 1, 30)
 
 	// Look it up
-	cardId := Db_get_card_by_pay_link_address(db_conn, "plaabbccdd")
+	cardId := Db_get_card_by_pay_link_address(db_conn, "pl.aabbccdd")
 	if cardId != 1 {
 		t.Fatalf("expected card_id 1, got %d", cardId)
 	}
 
 	// Unknown address returns 0
-	cardId = Db_get_card_by_pay_link_address(db_conn, "pl00000000")
+	cardId = Db_get_card_by_pay_link_address(db_conn, "pl.00000000")
 	if cardId != 0 {
 		t.Fatalf("expected 0 for unknown address, got %d", cardId)
 	}
@@ -1047,9 +1047,9 @@ func TestPayLinkAddress_ExpiredExcluded(t *testing.T) {
 	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
 
 	// Insert expired address directly
-	db_conn.Exec(`INSERT INTO pay_link_addresses (address, card_id, created_at, expires_at) VALUES ('plexpired1', 1, 1000, 1001)`)
+	db_conn.Exec(`INSERT INTO pay_link_addresses (address, card_id, created_at, expires_at) VALUES ('pl.expired1', 1, 1000, 1001)`)
 
-	cardId := Db_get_card_by_pay_link_address(db_conn, "plexpired1")
+	cardId := Db_get_card_by_pay_link_address(db_conn, "pl.expired1")
 	if cardId != 0 {
 		t.Fatalf("expected 0 for expired address, got %d", cardId)
 	}
@@ -1061,9 +1061,9 @@ func TestPayLinkAddress_DisabledCardExcluded(t *testing.T) {
 	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
 	// pay_link_enabled defaults to 'N'
 
-	Db_add_pay_link_address(db_conn, "pldisabled", 1, 30)
+	Db_add_pay_link_address(db_conn, "pl.disabled", 1, 30)
 
-	cardId := Db_get_card_by_pay_link_address(db_conn, "pldisabled")
+	cardId := Db_get_card_by_pay_link_address(db_conn, "pl.disabled")
 	if cardId != 0 {
 		t.Fatalf("expected 0 for disabled pay_link card, got %d", cardId)
 	}
@@ -1075,14 +1075,14 @@ func TestPayLinkAddress_MultipleAddressesPerCard(t *testing.T) {
 	Db_insert_card(db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")
 	Db_update_card_pay_link_enabled(db_conn, 1, "Y")
 
-	Db_add_pay_link_address(db_conn, "pladdress1", 1, 30)
-	Db_add_pay_link_address(db_conn, "pladdress2", 1, 30)
+	Db_add_pay_link_address(db_conn, "pl.address1", 1, 30)
+	Db_add_pay_link_address(db_conn, "pl.address2", 1, 30)
 
 	// Both should resolve to the same card
-	if Db_get_card_by_pay_link_address(db_conn, "pladdress1") != 1 {
+	if Db_get_card_by_pay_link_address(db_conn, "pl.address1") != 1 {
 		t.Fatal("first address should still resolve")
 	}
-	if Db_get_card_by_pay_link_address(db_conn, "pladdress2") != 1 {
+	if Db_get_card_by_pay_link_address(db_conn, "pl.address2") != 1 {
 		t.Fatal("second address should also resolve")
 	}
 }

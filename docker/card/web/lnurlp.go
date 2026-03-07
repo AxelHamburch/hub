@@ -16,10 +16,10 @@ import (
 )
 
 // resolveCardByAddress looks up a card by lightning address.
-// Addresses starting with "pl" are one-time pay link addresses;
-// addresses starting with "c" are permanent per-card addresses.
+// Addresses starting with "pl." are one-time pay link addresses;
+// addresses starting with "c." are permanent per-card addresses.
 func resolveCardByAddress(db_conn *sql.DB, username string) int {
-	if strings.HasPrefix(username, "pl") {
+	if strings.HasPrefix(username, "pl.") {
 		return db.Db_get_card_by_pay_link_address(db_conn, username)
 	}
 	return db.Db_get_card_by_ln_address(db_conn, username)
