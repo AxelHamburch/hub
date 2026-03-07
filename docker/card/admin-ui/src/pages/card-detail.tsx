@@ -51,6 +51,7 @@ interface CardDetail {
   wiped: string;
   lnAddress: string;
   lnAddressEnabled: string;
+  payLinkEnabled: string;
   hostDomain: string;
 }
 
@@ -97,6 +98,7 @@ export function CardDetailPage() {
     dayLimitSats: string;
     lnurlwEnable: string;
     lnAddressEnabled: string;
+    payLinkEnabled: string;
   } | null>(null);
 
   const limitsMutation = useMutation({
@@ -105,6 +107,7 @@ export function CardDetailPage() {
       dayLimitSats: number;
       lnurlwEnable: string;
       lnAddressEnabled: string;
+      payLinkEnabled: string;
     }) => apiPut(`/cards/${id}/limits`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["card", id] });
@@ -146,6 +149,7 @@ export function CardDetailPage() {
       dayLimitSats: String(card!.dayLimitSats),
       lnurlwEnable: card!.lnurlwEnable,
       lnAddressEnabled: card!.lnAddressEnabled,
+      payLinkEnabled: card!.payLinkEnabled,
     });
   }
 
@@ -156,6 +160,7 @@ export function CardDetailPage() {
       dayLimitSats: Number(limitsForm.dayLimitSats) || 0,
       lnurlwEnable: limitsForm.lnurlwEnable,
       lnAddressEnabled: limitsForm.lnAddressEnabled,
+      payLinkEnabled: limitsForm.payLinkEnabled,
     });
   }
 
@@ -299,7 +304,7 @@ export function CardDetailPage() {
         <CardContent>
           {limitsForm ? (
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div className="space-y-2">
                   <Label>Tx Limit (sats)</Label>
                   <Input
@@ -360,6 +365,23 @@ export function CardDetailPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Pay Link (LUD-19)</Label>
+                  <Select
+                    value={limitsForm.payLinkEnabled}
+                    onValueChange={(v) =>
+                      setLimitsForm({ ...limitsForm, payLinkEnabled: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Y">Enabled</SelectItem>
+                      <SelectItem value="N">Disabled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -379,7 +401,7 @@ export function CardDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
               <div>
                 <span className="text-muted-foreground">Tx Limit</span>
                 <p className="font-mono tabular-nums">
@@ -399,6 +421,10 @@ export function CardDetailPage() {
               <div>
                 <span className="text-muted-foreground">Lightning Address</span>
                 <p>{card.lnAddressEnabled === "Y" ? "Enabled" : "Disabled"}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Pay Link</span>
+                <p>{card.payLinkEnabled === "Y" ? "Enabled" : "Disabled"}</p>
               </div>
             </div>
           )}
