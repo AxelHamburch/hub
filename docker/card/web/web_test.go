@@ -2265,6 +2265,50 @@ func TestLnurlpRequest_DisabledAddress(t *testing.T) {
 	}
 }
 
+func TestLnurlpRequest_PayLinkAddress(t *testing.T) {
+	app := openTestApp(t)
+	insertFundedCard(t, app.db_conn, 1000)
+
+	// Enable pay link and insert a one-time address
+	db.Db_update_card_pay_link_enabled(app.db_conn, 1, "Y")
+	db.Db_add_pay_link_address(app.db_conn, "plonetimex", 1, 30)
+
+	handler := app.CreateHandler_LnurlpRequest()
+	r := httptest.NewRequest("GET", "/.well-known/lnurlp/plonetimex", nil)
+	r = mux.SetURLVars(r, map[string]string{"username": "plonetimex"})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp["tag"] != "payRequest" {
+		t.Fatalf("expected tag payRequest, got %v", resp["tag"])
+	}
+}
+
+func TestLnurlpCallback_PayLinkAddress(t *testing.T) {
+	app := openTestApp(t)
+	insertFundedCard(t, app.db_conn, 1000)
+
+	db.Db_update_card_pay_link_enabled(app.db_conn, 1, "Y")
+	db.Db_add_pay_link_address(app.db_conn, "plcallback", 1, 30)
+
+	handler := app.CreateHandler_LnurlpCallback()
+	r := httptest.NewRequest("GET", "/.well-known/lnurlp/plcallback/callback?amount=10000", nil)
+	r = mux.SetURLVars(r, map[string]string{"username": "plcallback"})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+
+	// Phoenix unavailable in tests → 500 (not 404), proves address resolved
+	if w.Code == http.StatusNotFound {
+		t.Fatalf("expected non-404 (address should resolve), got %d: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestLnurlpCallback_MissingAmount(t *testing.T) {
 	app := openTestApp(t)
 	db.Db_insert_card(app.db_conn, "k0", "k1", "k2", "k3", "k4", "login1", "pass1")

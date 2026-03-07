@@ -4,14 +4,26 @@ import (
 	"card/db"
 	"card/phoenix"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
+
+// resolveCardByAddress looks up a card by lightning address.
+// Addresses starting with "pl" are one-time pay link addresses;
+// addresses starting with "c" are permanent per-card addresses.
+func resolveCardByAddress(db_conn *sql.DB, username string) int {
+	if strings.HasPrefix(username, "pl") {
+		return db.Db_get_card_by_pay_link_address(db_conn, username)
+	}
+	return db.Db_get_card_by_ln_address(db_conn, username)
+}
 
 func lnurlpMetadata(username, hostDomain string) string {
 	return fmt.Sprintf(`[["text/plain","Payment to %s@%s"]]`, username, hostDomain)
@@ -34,7 +46,7 @@ func (app *App) CreateHandler_LnurlpRequest() http.HandlerFunc {
 			return
 		}
 
-		cardId := db.Db_get_card_by_ln_address(app.db_conn, username)
+		cardId := resolveCardByAddress(app.db_conn, username)
 		if cardId == 0 {
 			w.WriteHeader(http.StatusNotFound)
 			writeJSON(w, map[string]string{"status": "ERROR", "reason": "not found"})
@@ -66,7 +78,7 @@ func (app *App) CreateHandler_LnurlpCallback() http.HandlerFunc {
 			return
 		}
 
-		cardId := db.Db_get_card_by_ln_address(app.db_conn, username)
+		cardId := resolveCardByAddress(app.db_conn, username)
 		if cardId == 0 {
 			w.WriteHeader(http.StatusNotFound)
 			writeJSON(w, map[string]string{"status": "ERROR", "reason": "not found"})
