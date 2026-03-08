@@ -53,7 +53,15 @@ func Db_init(db_conn *sql.DB) {
 		update_schema_8(db_conn) // pay link addresses
 	}
 
-	if Db_get_setting(db_conn, "schema_version_number") != "9" {
+	if Db_get_setting(db_conn, "schema_version_number") == "9" {
+		update_schema_9(db_conn) // fix address dot-separator format
+	}
+
+	if Db_get_setting(db_conn, "schema_version_number") == "10" {
+		update_schema_10(db_conn) // enable withdrawals on all cards
+	}
+
+	if Db_get_setting(db_conn, "schema_version_number") != "11" {
 		panic("database schema is not as expected")
 	}
 

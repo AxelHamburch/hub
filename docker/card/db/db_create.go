@@ -45,7 +45,7 @@ func create_cards_table(db *sql.DB) {
 			uid VARCHAR(14) NOT NULL DEFAULT '',
 			last_counter_value INT NOT NULL DEFAULT 0,
 			lnurlw_request_timeout_sec INT NOT NULL DEFAULT 10,
-			lnurlw_enable CHAR(1) NOT NULL DEFAULT 'N',
+			lnurlw_enable CHAR(1) NOT NULL DEFAULT 'Y',
 			lnurlw_k1 CHAR(32) NOT NULL DEFAULT '',
 			lnurlw_k1_expiry INT NOT NULL DEFAULT 0,
 			tx_limit_sats INT NOT NULL DEFAULT 1000000,
@@ -306,6 +306,47 @@ func update_schema_8(db *sql.DB) {
 	_, err = db.Exec("UPDATE settings SET value='9' WHERE name='schema_version_number'")
 	if err != nil {
 		log.Printf("update_schema_8 version update error: %q", err)
+	}
+}
+
+func update_schema_9(db *sql.DB) {
+
+	// Fix address formats for databases migrated before dot-separator refactor:
+	// cards.ln_address: "c{hex}" → "c.{hex}"
+	// pay_link_addresses.address: "pl{hex}" → "pl.{hex}"
+
+	_, err := db.Exec(`UPDATE cards SET ln_address = 'c.' || SUBSTR(ln_address, 2)
+		WHERE ln_address LIKE 'c%' AND ln_address NOT LIKE 'c.%'`)
+	if err != nil {
+		log.Printf("update_schema_9 ln_address fix error: %q", err)
+		return
+	}
+
+	_, err = db.Exec(`UPDATE pay_link_addresses SET address = 'pl.' || SUBSTR(address, 3)
+		WHERE address LIKE 'pl%' AND address NOT LIKE 'pl.%'`)
+	if err != nil {
+		log.Printf("update_schema_9 pay_link_addresses fix error: %q", err)
+		return
+	}
+
+	_, err = db.Exec("UPDATE settings SET value='10' WHERE name='schema_version_number'")
+	if err != nil {
+		log.Printf("update_schema_9 version update error: %q", err)
+	}
+}
+
+func update_schema_10(db *sql.DB) {
+
+	// Enable withdrawals on all existing non-wiped cards
+	_, err := db.Exec(`UPDATE cards SET lnurlw_enable = 'Y' WHERE wiped = 'N' AND lnurlw_enable = 'N'`)
+	if err != nil {
+		log.Printf("update_schema_10 enable withdrawals error: %q", err)
+		return
+	}
+
+	_, err = db.Exec("UPDATE settings SET value='11' WHERE name='schema_version_number'")
+	if err != nil {
+		log.Printf("update_schema_10 version update error: %q", err)
 	}
 }
 

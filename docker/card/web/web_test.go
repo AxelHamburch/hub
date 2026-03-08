@@ -1351,7 +1351,8 @@ func TestLnurlwRequest_WithdrawDisabled(t *testing.T) {
 	key2Hex := hex.EncodeToString(nfcTestKey2)
 	db.Db_insert_card(app.db_conn, "k0", key1Hex, key2Hex, "k3", "k4", "lnlogin", "lnpass")
 	db.Db_set_tokens(app.db_conn, "lnlogin", "lnpass", "lnaccess", "lnrefresh")
-	// lnurlw_enable defaults to 'N' — do NOT enable it
+	// explicitly disable withdrawals for this test
+	app.db_conn.Exec("UPDATE cards SET lnurlw_enable='N' WHERE login='lnlogin'")
 
 	p, c := buildNfcTap(t, nfcTestKey1, nfcTestKey2, nfcTestUID, 1)
 	pHex := hex.EncodeToString(p)
