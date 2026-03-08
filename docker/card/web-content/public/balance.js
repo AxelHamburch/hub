@@ -31,6 +31,12 @@ function el(tag, cls, text) {
 function render(data) {
     results.replaceChildren();
 
+    if (data.error) {
+        results.appendChild(el('div', 'error-message', data.error));
+        results.style.display = 'block';
+        return;
+    }
+
     const cardInfo = el('div', 'card-info');
     cardInfo.appendChild(el('span', 'card-id', 'Card #' + data.CardId));
     if (data.Note) cardInfo.appendChild(el('span', 'card-note', data.Note));
@@ -73,11 +79,13 @@ btn.addEventListener('click', async () => {
     results.style.display = 'none';
 
     try {
+        const ac = new AbortController();
         const reader = new NDEFReader();
-        await reader.scan();
+        await reader.scan({ signal: ac.signal });
 
         reader.addEventListener('reading', ({ message }) => {
             if (message.records.length === 0) return;
+            ac.abort();
 
             const url = new TextDecoder('utf-8').decode(message.records[0].data);
 
@@ -92,7 +100,7 @@ btn.addEventListener('click', async () => {
                     btn.textContent = 'Scan Card';
                     btn.disabled = false;
                 });
-        });
+        }, { signal: ac.signal });
     } catch {
         btn.textContent = 'Scan Card';
         btn.disabled = false;

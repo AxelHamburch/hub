@@ -31,7 +31,8 @@ func (app *App) CreateHandler_BalanceAjaxPage() http.HandlerFunc {
 		params_p, ok := r.URL.Query()["card"]
 		if !ok || len(params_p[0]) < 1 {
 			log.Info("card value not found")
-			//TODO: return error
+			writeJSON(w, AjaxBalanceResponse{Error: "card value not found"})
+			return
 		}
 
 		card_str := params_p[0]
@@ -40,26 +41,28 @@ func (app *App) CreateHandler_BalanceAjaxPage() http.HandlerFunc {
 
 		u, err := url.Parse(card_str)
 		if err != nil {
+			writeJSON(w, AjaxBalanceResponse{Error: "invalid card data"})
 			return
 		}
-
-		// TODO: check card domain and advise if incorrect
 
 		// check card p & c values
 		p, c, err := Get_p_c(u)
 		if err != nil {
+			writeJSON(w, AjaxBalanceResponse{Error: "card not recognised"})
 			return
 		}
 
 		cardMatch, cardId, cardCounter := Find_card(app.db_conn, p, c)
 
 		if !cardMatch {
+			writeJSON(w, AjaxBalanceResponse{Error: "card not found"})
 			return
 		}
 
 		// check counter is incremented
 		cardLastCounter := db.Db_get_card_counter(app.db_conn, cardId)
 		if cardCounter <= cardLastCounter {
+			writeJSON(w, AjaxBalanceResponse{Error: "card already scanned, tap again"})
 			return
 		}
 
