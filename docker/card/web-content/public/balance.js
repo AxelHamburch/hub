@@ -31,6 +31,11 @@ function el(tag, cls, text) {
 function render(data) {
     results.replaceChildren();
 
+    const cardInfo = el('div', 'card-info');
+    cardInfo.appendChild(el('span', 'card-id', 'Card #' + data.CardId));
+    if (data.Note) cardInfo.appendChild(el('span', 'card-note', data.Note));
+    results.appendChild(cardInfo);
+
     results.appendChild(el('div', 'balance', data.AvailableBalance.toLocaleString() + ' sats'));
     results.appendChild(el('div', 'balance-label', 'Available Balance'));
 

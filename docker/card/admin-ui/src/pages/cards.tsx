@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
 import { formatSats } from "@/lib/format";
 import { Input } from "@/components/ui/input";
@@ -30,9 +29,26 @@ interface CardSummary {
 type StatusFilter = "active" | "disabled" | "all";
 
 export function CardsPage() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("q") ?? "";
+  const statusFilter = (searchParams.get("status") as StatusFilter) || "active";
   const navigate = useNavigate();
+
+  function setSearch(q: string) {
+    setSearchParams((prev) => {
+      if (q) prev.set("q", q);
+      else prev.delete("q");
+      return prev;
+    }, { replace: true });
+  }
+
+  function setStatusFilter(s: StatusFilter) {
+    setSearchParams((prev) => {
+      if (s !== "active") prev.set("status", s);
+      else prev.delete("status");
+      return prev;
+    }, { replace: true });
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["cards"],

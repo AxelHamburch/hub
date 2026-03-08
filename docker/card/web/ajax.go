@@ -16,6 +16,8 @@ type Tx struct {
 }
 
 type AjaxBalanceResponse struct {
+	CardId           int    `json:"CardId"`
+	Note             string `json:"Note"`
 	AvailableBalance int    `json:"AvailableBalance"`
 	Txs              []Tx   `json:"txs"`
 	Error            string `json:"error,omitempty"`
@@ -68,6 +70,12 @@ func (app *App) CreateHandler_BalanceAjaxPage() http.HandlerFunc {
 
 		// build response
 		var resObj AjaxBalanceResponse
+
+		resObj.CardId = cardId
+		card, err := db.Db_get_card(app.db_conn, cardId)
+		if err == nil {
+			resObj.Note = card.Note
+		}
 
 		// check the card balance
 		total_card_balance := db.Db_get_card_balance(app.db_conn, cardId)
