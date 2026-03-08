@@ -75,40 +75,35 @@ export function BatchProgramDialog() {
           Batch Program
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md overflow-hidden">
         <DialogHeader>
           <DialogTitle>Batch Program Cards</DialogTitle>
           <DialogDescription>
-            Create a programming link for multiple NFC cards. Scan the QR code
-            with the Bolt Card app.
+            Create a programming link for multiple NFC cards.
+            <br />
+            Scan the QR code with the Bolt Card app.
           </DialogDescription>
         </DialogHeader>
 
         {mutation.data ? (
           <div className="space-y-4">
-            {mutation.data.qr && (
-              <div className="flex justify-center">
-                <div className="rounded-lg bg-white p-4">
-                  <img
-                    src={`data:image/png;base64,${mutation.data.qr}`}
-                    alt="Batch Program QR"
-                    className="h-56 w-56"
-                  />
-                </div>
+            <div className="flex justify-center">
+              <div className="rounded-lg bg-white p-4">
+                <img
+                  src={`data:image/png;base64,${mutation.data.qr}`}
+                  alt="Batch Program QR"
+                  className="w-full max-w-64"
+                />
               </div>
-            )}
-            <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-muted px-3 py-2 text-xs">
-                {mutation.data.boltcardLink}
-              </code>
-              <Button variant="outline" size="icon" onClick={copyLink}>
-                {copied ? (
-                  <Check className="h-4 w-4 text-[var(--success)]" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
             </div>
+            <Button variant="outline" className="w-full" onClick={copyLink}>
+              {copied ? (
+                <Check className="mr-2 h-4 w-4 text-[var(--success)]" />
+              ) : (
+                <Copy className="mr-2 h-4 w-4" />
+              )}
+              {copied ? "Copied" : "Copy Link"}
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
