@@ -4,8 +4,8 @@
 # Usage:
 #   cp .env.standalone .env
 #   # edit .env with your values
-#   docker compose -f docker-compose.standalone.yml build
-#   docker compose -f docker-compose.standalone.yml up -d
+#   sudo docker compose -f docker-compose.standalone.yml build
+#   sudo docker compose -f docker-compose.standalone.yml up -d
 
 services:
   card:
@@ -13,6 +13,7 @@ services:
     image: boltcard/card:standalone
     container_name: card
     restart: unless-stopped
+    network_mode: host
     env_file: .env
     environment:
       - GOMEMLIMIT=150MiB
@@ -26,8 +27,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    ports:
-      - "127.0.0.1:8008:8000"
     volumes:
       - card_data:/card_data
 
