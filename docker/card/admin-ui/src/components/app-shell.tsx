@@ -48,7 +48,7 @@ export function AppShell() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <span className="ml-2 font-semibold">Bolt Card Hub</span>
+              <span className="ml-2 font-semibold whitespace-nowrap">Bolt Card Hub</span>
               <div className="ml-auto">
                 <LiveIndicator />
               </div>
