@@ -8,11 +8,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/go-ini/ini"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,15 +37,15 @@ type WebSocketMessage struct {
 // incoming payment events to all connected admin clients via the hub.
 // It runs once and reconnects are not needed (Phoenix connection is long-lived).
 func (app *App) startPhoenixListener() {
-	cfg, err := ini.Load("/root/.phoenix/phoenix.conf")
+	hp, err := phoenix.GetPassword()
 	if err != nil {
-		log.Error("failed to load phoenix config: ", err)
+		log.Error("failed to get phoenix password for websocket: ", err)
 		return
 	}
 
-	hp := cfg.Section("").Key("http-password").String()
+	wsURL := strings.Replace(phoenix.GetBaseURL(), "http://", "ws://", 1) + "/websocket"
 	h := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte(":" + hp))}}
-	c, _, err := websocket.DefaultDialer.Dial("ws://phoenix:9740/websocket", h)
+	c, _, err := websocket.DefaultDialer.Dial(wsURL, h)
 	if err != nil {
 		log.Info("phoenix websocket not available: ", err.Error())
 		return

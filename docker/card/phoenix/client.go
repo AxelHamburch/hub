@@ -67,6 +67,16 @@ func getPassword() (string, error) {
 	return cachedPassword, nil
 }
 
+// GetPassword returns the cached phoenix password for use by other packages.
+func GetPassword() (string, error) {
+	return getPassword()
+}
+
+// GetBaseURL returns the configured phoenix base URL.
+func GetBaseURL() string {
+	return phoenixBaseURL
+}
+
 // doRequest executes an HTTP request against the Phoenix API with basic auth.
 // It returns the response body bytes on success, or an error on failure.
 func doRequest(req *http.Request, timeout time.Duration, endpointName string) ([]byte, error) {
